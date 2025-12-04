@@ -8,6 +8,5 @@ import (
 
 func main() {
 	text := "Hello, OTUS!"
-
 	fmt.Println(reverse.String(text))
 }

@@ -45,3 +45,40 @@ func TestUnpackInvalidString(t *testing.T) {
 		})
 	}
 }
+
+// Запоминаем, 2 \\
+
+func TestMy(t *testing.T) {
+	//Unpack(nil)
+}
+
+func TestIsDigit(t *testing.T) {
+	tests := []struct {
+		input    rune
+		expected bool
+	}{
+		{input: '0', expected: true},
+		{input: '1', expected: true},
+		{input: '2', expected: true},
+		{input: '3', expected: true},
+		{input: '4', expected: true},
+		{input: '5', expected: true},
+		{input: '6', expected: true},
+		{input: '7', expected: true},
+		{input: '8', expected: true},
+		{input: '9', expected: true},
+		{input: 'g', expected: false},
+		{input: 'k', expected: false},
+		{input: 'n', expected: false},
+		{input: '\n', expected: false},
+		{input: '-', expected: false},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(string(tc.input), func(t *testing.T) {
+			digit := isDigit(tc.input)
+			require.Equal(t, tc.expected, digit)
+		})
+	}
+}

@@ -112,14 +112,14 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 		return nil, nil
 	}
 
-	s := u.runs[u.currentIndex]
+	newRune := u.runs[u.currentIndex]
 	u.currentIndex++
 
-	if unicode.IsDigit(s) {
-		return &symbol{val: s, symbolType: Digit}, nil
+	if unicode.IsDigit(newRune) {
+		return &symbol{val: newRune, symbolType: Digit}, nil
 	}
 
-	if s == BackSlashCode {
+	if newRune == BackSlashCode {
 		if !u.isFinish() {
 			symbolAfterBackSlashCode := u.runs[u.currentIndex]
 			u.currentIndex++
@@ -129,10 +129,10 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 			}
 		}
 
-		return nil, ErrInvalidString
+		return nil, fmt.Errorf("get escaped symbol: %w", ErrInvalidString)
 	}
 
-	return &symbol{val: s, symbolType: Other}, nil
+	return &symbol{val: newRune, symbolType: Other}, nil
 }
 
 func (u *unpacker) isFinish() bool {

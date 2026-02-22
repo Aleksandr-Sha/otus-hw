@@ -48,7 +48,11 @@ func (u *unpacker) UnpackString() (string, error) {
 
 	for u.isNotAllRead() {
 		if u.symbolForWrite.isDigit() {
-			return "", fmt.Errorf("first symbol before write iteration digit: %w", ErrInvalidString)
+			return "", fmt.Errorf(
+				"first symbol before write iteration digit %s: %w",
+				string(u.symbolForWrite.val),
+				ErrInvalidString,
+			)
 		}
 
 		if u.isFinish() {

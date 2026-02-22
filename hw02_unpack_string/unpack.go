@@ -37,7 +37,8 @@ type unpacker struct {
 func newUnpacker(str string) *unpacker {
 	return &unpacker{
 		currentIndex: 0,
-		runs:         []rune(str)}
+		runs:         []rune(str),
+	}
 }
 
 func (u *unpacker) UnpackString() (string, error) {
@@ -96,7 +97,6 @@ func (u *unpacker) writeCurrentSymbolAndSetNew(newSymbol *symbol) {
 
 func (u *unpacker) repeatAndWriteCurrentSymbol(countSymbol *symbol) error {
 	countRepeat, err := strconv.Atoi(string(countSymbol.val))
-
 	if err != nil {
 		return fmt.Errorf("parse digit: %w", err)
 	}

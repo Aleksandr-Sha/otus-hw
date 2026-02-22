@@ -126,12 +126,10 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 
 			if unicode.IsDigit(symbolAfterBackSlashCode) || symbolAfterBackSlashCode == BackSlashCode {
 				return &symbol{val: symbolAfterBackSlashCode, symbolType: Other}, nil
-			} else {
-				return nil, ErrInvalidString
 			}
-		} else {
-			return nil, ErrInvalidString
 		}
+
+		return nil, ErrInvalidString
 	}
 
 	return &symbol{val: s, symbolType: Other}, nil

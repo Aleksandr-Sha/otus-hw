@@ -20,7 +20,6 @@ const (
 type symbol struct {
 	val        rune
 	symbolType int
-	valStr     string
 }
 
 func (s *symbol) isDigit() bool {
@@ -117,16 +116,16 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 	u.currentIndex++
 
 	if unicode.IsDigit(s) {
-		return &symbol{val: s, symbolType: Digit, valStr: string(s)}, nil
+		return &symbol{val: s, symbolType: Digit}, nil
 	}
 
 	if s == BackSlashCode {
 		if !u.isFinish() {
-			symAfterBackSlashCode := u.runs[u.currentIndex]
+			symbolAfterBackSlashCode := u.runs[u.currentIndex]
 			u.currentIndex++
 
-			if unicode.IsDigit(symAfterBackSlashCode) || symAfterBackSlashCode == BackSlashCode {
-				return &symbol{val: symAfterBackSlashCode, symbolType: Other, valStr: string(symAfterBackSlashCode)}, nil
+			if unicode.IsDigit(symbolAfterBackSlashCode) || symbolAfterBackSlashCode == BackSlashCode {
+				return &symbol{val: symbolAfterBackSlashCode, symbolType: Other}, nil
 			} else {
 				return nil, ErrInvalidString
 			}
@@ -135,7 +134,7 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 		}
 	}
 
-	return &symbol{val: s, symbolType: Other, valStr: string(s)}, nil
+	return &symbol{val: s, symbolType: Other}, nil
 }
 
 func (u *unpacker) isFinish() bool {

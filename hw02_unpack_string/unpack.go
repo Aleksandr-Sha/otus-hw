@@ -46,7 +46,7 @@ func (u *unpacker) UnpackString() (string, error) {
 		return "", fmt.Errorf("read first symbol: %w", err)
 	}
 
-	for u.isNotAllRead() {
+	for u.isReadNotAll() {
 		if u.symbolForWrite.isDigit() {
 			return "", fmt.Errorf(
 				"first symbol before write iteration digit %s: %w",
@@ -55,7 +55,7 @@ func (u *unpacker) UnpackString() (string, error) {
 			)
 		}
 
-		if u.isFinish() {
+		if u.isReadFinish() {
 			u.writeCurrentSymbolAndSetNew(nil)
 			continue
 		}
@@ -112,7 +112,7 @@ func (u *unpacker) repeatAndWriteCurrentSymbol(countSymbol *symbol) error {
 }
 
 func (u *unpacker) getNextSymbol() (*symbol, error) {
-	if u.isFinish() {
+	if u.isReadFinish() {
 		return nil, nil
 	}
 
@@ -124,7 +124,7 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 	}
 
 	if newRune == BackSlashCode {
-		if !u.isFinish() {
+		if !u.isReadFinish() {
 			symbolAfterBackSlashCode := u.runs[u.currentIndex]
 			u.currentIndex++
 
@@ -139,11 +139,11 @@ func (u *unpacker) getNextSymbol() (*symbol, error) {
 	return &symbol{val: newRune, symbolType: Other}, nil
 }
 
-func (u *unpacker) isFinish() bool {
+func (u *unpacker) isReadFinish() bool {
 	return u.currentIndex == len(u.runs)
 }
 
-func (u *unpacker) isNotAllRead() bool {
+func (u *unpacker) isReadNotAll() bool {
 	return u.symbolForWrite != nil
 }
 

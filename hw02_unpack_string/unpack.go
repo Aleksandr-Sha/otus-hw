@@ -3,99 +3,160 @@ package hw02unpackstring
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-var ErrInvalidString = errors.New("invalid string")
-
-// / это особая ситуация
-// состояние последнего символа для повторения
-
 const BackSlashCode = 92
 
+var ErrInvalidString = errors.New("invalid string")
+
 const (
-	digit  = iota
-	letter // Тут возможно поправить
-	backSlash
+	Digit = iota
+	Other
 )
 
-type Character struct {
-	typeValue int
-	value     rune
+type symbol struct {
+	val        rune
+	symbolType int
+	valStr     string
 }
 
-func newCharacter(r rune) *Character {
-	if unicode.IsDigit(r) {
-		return &Character{typeValue: digit, value: r}
+func (s *symbol) isDigit() bool {
+	return s.symbolType == Digit
+}
+
+type unpacker struct {
+	currentIndex   int
+	runs           []rune
+	builder        strings.Builder
+	symbolForWrite *symbol
+}
+
+func newUnpacker(str string) *unpacker {
+	return &unpacker{
+		currentIndex: 0,
+		runs:         []rune(str)}
+}
+
+func (u *unpacker) UnpackString() (string, error) {
+	err := u.updateSymbolForWrite()
+	if err != nil {
+		return "", fmt.Errorf("read first symbol: %w", err)
 	}
 
-	if r == BackSlashCode {
-		return &Character{typeValue: backSlash, value: r}
-	}
+	for u.isNotAllRead() {
+		if u.symbolForWrite.isDigit() {
+			return "", fmt.Errorf("first symbol before write iteration digit: %w", ErrInvalidString)
+		}
 
-	return &Character{typeValue: letter, value: r}
-}
+		if u.isFinish() {
+			u.writeCurrentSymbolAndSetNew(nil)
+			continue
+		}
 
-type Unpacker struct {
-	str        []rune
-	currentLet *Character
-	index      int
-	builder    strings.Builder
-}
+		nextSymbol, err := u.getNextSymbol()
+		if err != nil {
+			return "", fmt.Errorf("read next symbol: %w", err)
+		}
 
-func newUnpacker(str string) (*Unpacker, error) {
-	runes := []rune(str)
+		if nextSymbol.isDigit() {
+			err := u.repeatAndWriteCurrentSymbol(nextSymbol)
+			if err != nil {
+				return "", fmt.Errorf("repeat and write: %w", err)
+			}
 
-	if isDigit(runes[0]) {
-		return nil, fmt.Errorf("first letter must not be a digit")
-	}
-
-	return &Unpacker{runes, newCharacter(runes[0]), 1, strings.Builder{}}, nil
-}
-
-func (u *Unpacker) getNext() *Character {
-	return newCharacter(u.str[u.index])
-}
-
-//нужно как-то запомнить состояние когда идёт \
-
-func (u *Unpacker) unpack() (string, error) {
-	for u.index < len(u.str) {
-		next := u.getNext()
-
-		switch next.typeValue {
-		case digit:
+			err = u.updateSymbolForWrite()
+			if err != nil {
+				return "", fmt.Errorf("after repeat and write: %w", err)
+			}
+		} else {
+			u.writeCurrentSymbolAndSetNew(nextSymbol)
 		}
 	}
 
-	return "", nil
+	return u.builder.String(), nil
+}
+
+func (u *unpacker) updateSymbolForWrite() error {
+	newSymbolForWrite, err := u.getNextSymbol()
+	if err != nil {
+		return fmt.Errorf("update symbol for write: %w", err)
+	}
+
+	u.symbolForWrite = newSymbolForWrite
+	return nil
+}
+
+func (u *unpacker) writeCurrentSymbolAndSetNew(newSymbol *symbol) {
+	u.builder.WriteRune(u.symbolForWrite.val)
+	u.symbolForWrite = newSymbol
+}
+
+func (u *unpacker) repeatAndWriteCurrentSymbol(countSymbol *symbol) error {
+	countRepeat, err := strconv.Atoi(string(countSymbol.val))
+
+	if err != nil {
+		return fmt.Errorf("parse digit: %w", err)
+	}
+
+	repeatPart := strings.Repeat(string(u.symbolForWrite.val), countRepeat)
+
+	u.builder.WriteString(repeatPart)
+
+	return nil
+}
+
+func (u *unpacker) getNextSymbol() (*symbol, error) {
+	if u.isFinish() {
+		return nil, nil
+	}
+
+	s := u.runs[u.currentIndex]
+	u.currentIndex++
+
+	if unicode.IsDigit(s) {
+		return &symbol{val: s, symbolType: Digit, valStr: string(s)}, nil
+	}
+
+	if s == BackSlashCode {
+		if !u.isFinish() {
+			symAfterBackSlashCode := u.runs[u.currentIndex]
+			u.currentIndex++
+
+			if unicode.IsDigit(symAfterBackSlashCode) || symAfterBackSlashCode == BackSlashCode {
+				return &symbol{val: symAfterBackSlashCode, symbolType: Other, valStr: string(symAfterBackSlashCode)}, nil
+			} else {
+				return nil, ErrInvalidString
+			}
+		} else {
+			return nil, ErrInvalidString
+		}
+	}
+
+	return &symbol{val: s, symbolType: Other, valStr: string(s)}, nil
+}
+
+func (u *unpacker) isFinish() bool {
+	return u.currentIndex == len(u.runs)
+}
+
+func (u *unpacker) isNotAllRead() bool {
+	return u.symbolForWrite != nil
 }
 
 func Unpack(str string) (string, error) {
-	if len(str) == 0 {
+	if str == "" {
 		return "", nil
 	}
 
-	unpacker, err := newUnpacker(str)
+	unpacker := newUnpacker(str)
 
+	unpackString, err := unpacker.UnpackString()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unpack: %w", err)
 	}
 
-	result, err := unpacker.unpack()
-
-	if err != nil {
-		return "", err
-	}
-
-	return result, nil
-}
-
-func isDigit(letter rune) bool {
-	if letter >= '0' && letter <= '9' {
-		return true
-	}
-
-	return false
+	return unpackString, nil
 }

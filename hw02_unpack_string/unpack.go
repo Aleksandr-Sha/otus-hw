@@ -8,14 +8,15 @@ import (
 	"unicode"
 )
 
-const BackSlashCode = 92
-
 var ErrInvalidString = errors.New("invalid string")
 
 const (
 	Digit = iota
 	Other
+	Empty
 )
+
+const BackSlashCode = 92
 
 type symbol struct {
 	val        rune
@@ -24,6 +25,10 @@ type symbol struct {
 
 func (s *symbol) isDigit() bool {
 	return s.symbolType == Digit
+}
+
+func (s *symbol) isEmpty() bool {
+	return s.symbolType == Empty
 }
 
 type unpacker struct {
@@ -56,7 +61,7 @@ func (u *unpacker) UnpackString() (string, error) {
 		}
 
 		if u.isReadFinish() {
-			u.writeCurrentSymbolAndSetNew(nil)
+			u.writeCurrentSymbolAndSetNew(&symbol{symbolType: Empty})
 			continue
 		}
 
@@ -113,7 +118,7 @@ func (u *unpacker) repeatAndWriteCurrentSymbol(countSymbol *symbol) error {
 
 func (u *unpacker) getNextSymbol() (*symbol, error) {
 	if u.isReadFinish() {
-		return nil, nil
+		return &symbol{symbolType: Empty}, nil
 	}
 
 	newRune := u.runs[u.currentIndex]
@@ -144,7 +149,7 @@ func (u *unpacker) isReadFinish() bool {
 }
 
 func (u *unpacker) isReadNotAll() bool {
-	return u.symbolForWrite != nil
+	return !u.symbolForWrite.isEmpty()
 }
 
 func Unpack(str string) (string, error) {

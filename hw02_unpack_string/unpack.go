@@ -45,7 +45,7 @@ func newUnpacker(str string) *unpacker {
 	}
 }
 
-func (u *unpacker) UnpackString() (string, error) {
+func (u *unpacker) unpackString() (string, error) {
 	err := u.updateSymbolForWrite()
 	if err != nil {
 		return "", fmt.Errorf("read first symbol: %w", err)
@@ -159,7 +159,7 @@ func Unpack(str string) (string, error) {
 
 	unpacker := newUnpacker(str)
 
-	unpackString, err := unpacker.UnpackString()
+	unpackString, err := unpacker.unpackString()
 	if err != nil {
 		return "", fmt.Errorf("unpack: %w", err)
 	}

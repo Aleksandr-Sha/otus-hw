@@ -54,11 +54,7 @@ func (w *wordCounter) sortWords() {
 		jCount := w.countMap[w.result[j]]
 
 		if iCount == jCount {
-			if strings.Compare(w.result[i], w.result[j]) < 0 {
-				return true
-			}
-
-			return false
+			return strings.Compare(w.result[i], w.result[j]) < 0
 		}
 
 		return iCount > jCount
@@ -68,9 +64,9 @@ func (w *wordCounter) sortWords() {
 func (w *wordCounter) getTop10FromResult() []string {
 	if len(w.result) < 10 {
 		return w.result[:len(w.result):len(w.result)]
-	} else {
-		return w.result[:10:10]
 	}
+
+	return w.result[:10:10]
 }
 
 func Top10(text string) []string {

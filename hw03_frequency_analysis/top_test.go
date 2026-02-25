@@ -121,7 +121,7 @@ func TestTop10WhenWordsHaveDifferentPunctuationMarksInMiddle(t *testing.T) {
 	require.Equal(t, expected, Top10(text))
 }
 
-func TestTop10WhenManyDashes(t *testing.T) {
+func TestTop10WhenWordsFromDashes(t *testing.T) {
 	text := "- - --- -------"
 
 	expected := []string{

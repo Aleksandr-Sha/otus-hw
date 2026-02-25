@@ -6,7 +6,10 @@ import (
 	"strings"
 )
 
-var punctuationMarksFromEdgesPattern = regexp.MustCompile(`^\p{P}+|\p{P}+$`)
+var (
+	punctuationMarksFromEdgesRegexp = regexp.MustCompile(`^\p{P}+|\p{P}+$`)
+	dashesRegexp                    = regexp.MustCompile(`^-+$`)
+)
 
 type wordCounter struct {
 	text     string
@@ -33,7 +36,9 @@ func (w *wordCounter) getTop10Word() []string {
 }
 
 func (w *wordCounter) processAndCountWord(word string) {
-	word = punctuationMarksFromEdgesPattern.ReplaceAllString(strings.ToLower(word), "")
+	if !dashesRegexp.MatchString(word) {
+		word = punctuationMarksFromEdgesRegexp.ReplaceAllString(strings.ToLower(word), "")
+	}
 
 	if _, ok := w.countMap[word]; ok {
 		w.countMap[word]++
@@ -69,13 +74,11 @@ func (w *wordCounter) getTop10FromResult() []string {
 }
 
 func Top10(text string) []string {
-	result := make([]string, 0)
-
 	if text == "" {
-		return result
+		return []string{}
 	}
 
-	newWordCounter := newWordCounter(text)
+	wordCounter := newWordCounter(text)
 
-	return newWordCounter.getTop10Word()
+	return wordCounter.getTop10Word()
 }

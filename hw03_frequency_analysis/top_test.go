@@ -101,12 +101,33 @@ func TestTop10WhenResultLenLess10(t *testing.T) {
 	require.Len(t, result, len(expected))
 }
 
-func TestTop10WhenResultOneWord(t *testing.T) {
-	text := "Слово"
+func TestTop10WhenWordsHaveDifferentCaseAndPunctuationMarks(t *testing.T) {
+	text := "Слово -Слово; сЛово!"
 
 	expected := []string{"слово"}
 
-	result := Top10(text)
-	require.Equal(t, expected, result)
-	require.Len(t, result, len(expected))
+	require.Equal(t, expected, Top10(text))
+}
+
+func TestTop10WhenWordsHaveDifferentPunctuationMarksInMiddle(t *testing.T) {
+	text := "Слово сло-во сло..во"
+
+	expected := []string{
+		"сло-во",  // 1
+		"сло..во", // 1
+		"слово",   // 1
+	}
+
+	require.Equal(t, expected, Top10(text))
+}
+
+func TestTop10WhenManyDashes(t *testing.T) {
+	text := "- - --- -------"
+
+	expected := []string{
+		"---",     // 1
+		"-------", // 1
+	}
+
+	require.Equal(t, expected, Top10(text))
 }

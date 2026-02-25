@@ -23,11 +23,9 @@ func newWordCounter(text string) *wordCounter {
 
 func (w *wordCounter) getTop10Word() []string {
 	for _, word := range strings.Fields(w.text) {
-		if word == "-" {
-			continue
+		if word != "-" {
+			w.processAndCountWord(word)
 		}
-
-		w.processAndCountWord(word)
 	}
 
 	w.sortWords()

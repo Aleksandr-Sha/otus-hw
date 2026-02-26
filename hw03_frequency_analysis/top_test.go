@@ -7,7 +7,7 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+var taskWithAsteriskIsCompleted = true
 
 var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
@@ -79,4 +79,55 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestTop10WhenResultLenLess10(t *testing.T) {
+	text := "Генри Форд - владелец заводов по производству автомобилей по всему миру"
+
+	expected := []string{
+		"по",           // 2
+		"автомобилей",  // 1
+		"владелец",     // 1
+		"всему",        // 1
+		"генри",        // 1
+		"заводов",      // 1
+		"миру",         // 1
+		"производству", // 1
+		"форд",         // 1
+	}
+
+	result := Top10(text)
+	require.Equal(t, expected, result)
+	require.Len(t, result, len(expected))
+}
+
+func TestTop10WhenWordsHaveDifferentCaseAndPunctuationMarks(t *testing.T) {
+	text := "Слово -Слово; сЛово!"
+
+	expected := []string{"слово"}
+
+	require.Equal(t, expected, Top10(text))
+}
+
+func TestTop10WhenWordsHaveDifferentPunctuationMarksInMiddle(t *testing.T) {
+	text := "Слово сло-во сло..во"
+
+	expected := []string{
+		"сло-во",  // 1
+		"сло..во", // 1
+		"слово",   // 1
+	}
+
+	require.Equal(t, expected, Top10(text))
+}
+
+func TestTop10WhenWordsFromDashes(t *testing.T) {
+	text := "- - --- -------"
+
+	expected := []string{
+		"---",     // 1
+		"-------", // 1
+	}
+
+	require.Equal(t, expected, Top10(text))
 }

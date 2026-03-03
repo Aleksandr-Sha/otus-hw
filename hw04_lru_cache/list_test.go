@@ -49,3 +49,81 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestListMoveToFrontWhenItemMiddle(t *testing.T) {
+	l := NewList()
+
+	l.PushFront(10)
+	l.PushFront(20)
+	l.PushFront(30)
+
+	middle := l.Front().Next
+	l.MoveToFront(middle)
+
+	elems := make([]int, 0, l.Len())
+	for i := l.Front(); i != nil; i = i.Next {
+		elems = append(elems, i.Value.(int))
+	}
+	require.Equal(t, []int{20, 30, 10}, elems)
+}
+
+func TestListPushFrontWhenFirstItem(t *testing.T) {
+	l := NewList()
+
+	item := l.PushFront(10)
+
+	require.Equal(t, item, l.Front())
+	require.Equal(t, item, l.Back())
+}
+
+func TestListPushBackOneWhenFirstItem(t *testing.T) {
+	l := NewList()
+
+	item := l.PushBack(10)
+
+	require.Equal(t, item, l.Front())
+	require.Equal(t, item, l.Back())
+}
+
+func TestListRemoveWhenItemInBack(t *testing.T) {
+	l := NewList()
+
+	l.PushBack(10)
+	l.PushBack(20)
+	l.PushBack(30)
+
+	l.Remove(l.Back())
+
+	require.Equal(t, 2, l.Len())
+
+	require.Equal(t, 20, l.Back().Value)
+	require.Equal(t, 10, l.Back().Prev.Value)
+}
+
+func TestListRemoveWhenItemInFront(t *testing.T) {
+	l := NewList()
+
+	l.PushFront(10)
+	l.PushFront(20)
+	l.PushFront(30)
+
+	l.Remove(l.Front())
+
+	require.Equal(t, 2, l.Len())
+
+	require.Equal(t, 20, l.Front().Value)
+	require.Equal(t, 10, l.Front().Next.Value)
+}
+
+func TestListRemoveWhenLastItem(t *testing.T) {
+	l := NewList()
+
+	item := l.PushFront(10)
+	require.Equal(t, 1, l.Len())
+
+	l.Remove(item)
+
+	require.Equal(t, 0, l.Len())
+	require.Nil(t, l.Front())
+	require.Nil(t, l.Back())
+}

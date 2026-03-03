@@ -19,32 +19,30 @@ type cacheItem struct {
 	key   Key
 }
 
-func (l lruCache) Set(key Key, value interface{}) bool {
+func newCacheItem(key Key, value interface{}) cacheItem {
+	return cacheItem{value, key}
+}
+
+func (l *lruCache) Set(key Key, value interface{}) bool {
+	newValue := newCacheItem(key, value)
+
 	if item, ok := l.items[key]; ok {
-		item.Value = cacheItem{value: value, key: key}
+		item.Value = newValue
 		l.queue.MoveToFront(item)
 		return true
 	} else {
-		valueForItem := cacheItem{value: value, key: key}
+		newItem := l.queue.PushFront(newValue)
+		l.items[key] = newItem
 
-		if l.queue.Len() < l.capacity {
-			newItem := l.queue.PushFront(valueForItem)
-			l.items[key] = newItem
-		} else {
-			back := l.queue.Back()
-
-			l.queue.Remove(l.queue.Back())
-			newItem := l.queue.PushFront(valueForItem)
-			l.items[key] = newItem
-
-			delete(l.items, back.Value.(cacheItem).key)
+		if l.queue.Len() > l.capacity {
+			l.removeLast()
 		}
 
 		return false
 	}
 }
 
-func (l lruCache) Get(key Key) (interface{}, bool) {
+func (l *lruCache) Get(key Key) (interface{}, bool) {
 	if item, ok := l.items[key]; ok {
 		l.queue.MoveToFront(item)
 		return item.Value.(cacheItem).value, true
@@ -53,9 +51,15 @@ func (l lruCache) Get(key Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (l lruCache) Clear() {
+func (l *lruCache) Clear() {
 	clear(l.items)
 	l.queue = NewList()
+}
+
+func (l *lruCache) removeLast() {
+	back := l.queue.Back()
+	l.queue.Remove(back)
+	delete(l.items, back.Value.(cacheItem).key)
 }
 
 func NewCache(capacity int) Cache {

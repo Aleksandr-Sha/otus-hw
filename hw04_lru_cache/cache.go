@@ -24,20 +24,14 @@ func newCacheItem(key Key, value interface{}) cacheItem {
 }
 
 func (l *lruCache) Set(key Key, value interface{}) bool {
-	newValue := newCacheItem(key, value)
+	valueForItem := newCacheItem(key, value)
 
 	if item, ok := l.items[key]; ok {
-		item.Value = newValue
-		l.queue.MoveToFront(item)
+		l.updateItem(item, valueForItem)
 		return true
 	} else {
-		newItem := l.queue.PushFront(newValue)
-		l.items[key] = newItem
-
-		if l.queue.Len() > l.capacity {
-			l.removeLast()
-		}
-
+		l.addItem(valueForItem)
+		l.removeLastIfNeed()
 		return false
 	}
 }
@@ -56,10 +50,22 @@ func (l *lruCache) Clear() {
 	l.queue = NewList()
 }
 
-func (l *lruCache) removeLast() {
-	back := l.queue.Back()
-	l.queue.Remove(back)
-	delete(l.items, back.Value.(cacheItem).key)
+func (l *lruCache) addItem(valueForItem cacheItem) {
+	newItem := l.queue.PushFront(valueForItem)
+	l.items[valueForItem.key] = newItem
+}
+
+func (l *lruCache) updateItem(item *ListItem, valueForItem cacheItem) {
+	item.Value = valueForItem
+	l.queue.MoveToFront(item)
+}
+
+func (l *lruCache) removeLastIfNeed() {
+	if l.queue.Len() > l.capacity {
+		back := l.queue.Back()
+		l.queue.Remove(back)
+		delete(l.items, back.Value.(cacheItem).key)
+	}
 }
 
 func NewCache(capacity int) Cache {

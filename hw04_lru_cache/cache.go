@@ -31,7 +31,7 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 		return true
 	} else {
 		l.addItem(valueForItem)
-		l.removeLastIfNeed()
+		l.removeLastIfExceededCapacity()
 		return false
 	}
 }
@@ -60,12 +60,16 @@ func (l *lruCache) updateItem(item *ListItem, valueForItem cacheItem) {
 	l.queue.MoveToFront(item)
 }
 
-func (l *lruCache) removeLastIfNeed() {
-	if l.queue.Len() > l.capacity {
+func (l *lruCache) removeLastIfExceededCapacity() {
+	if l.isExceededCapacity() {
 		back := l.queue.Back()
 		l.queue.Remove(back)
 		delete(l.items, back.Value.(cacheItem).key)
 	}
+}
+
+func (l *lruCache) isExceededCapacity() bool {
+	return l.queue.Len() > l.capacity
 }
 
 func NewCache(capacity int) Cache {

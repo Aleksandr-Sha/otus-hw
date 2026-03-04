@@ -72,10 +72,10 @@ func (l *list) Remove(i *ListItem) {
 	if l.len == 1 {
 		l.frontItem = nil
 		l.backItem = nil
-	} else if i.Next == nil {
+	} else if i == l.backItem {
 		i.Prev.Next = nil
 		l.backItem = i.Prev
-	} else if i.Prev == nil {
+	} else if i == l.frontItem {
 		i.Next.Prev = nil
 		l.frontItem = i.Next
 	} else {

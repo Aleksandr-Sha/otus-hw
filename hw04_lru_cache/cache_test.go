@@ -108,8 +108,6 @@ func TestCachePushingOutOldElementWhenCapacityExceeded(t *testing.T) {
 	_, ok = c.Get("KEY_1")
 	require.True(t, ok)
 
-	// KEY_2 Последний элемент
-
 	wasInCache = c.Set("KEY_4", 4)
 	require.False(t, wasInCache)
 

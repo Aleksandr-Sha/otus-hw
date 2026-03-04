@@ -29,11 +29,11 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 	if item, ok := l.items[key]; ok {
 		l.updateItem(item, valueForItem)
 		return true
-	} else {
-		l.addItem(valueForItem)
-		l.removeLastIfExceededCapacity()
-		return false
 	}
+
+	l.addItem(valueForItem)
+	l.removeLastIfExceededCapacity()
+	return false
 }
 
 func (l *lruCache) Get(key Key) (interface{}, bool) {

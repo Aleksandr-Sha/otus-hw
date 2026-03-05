@@ -50,8 +50,69 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(2)
+
+		wasInCache := c.Set("aaa", 100)
+		require.False(t, wasInCache)
+
+		wasInCache = c.Set("bbb", 200)
+		require.False(t, wasInCache)
+
+		c.Clear()
+
+		_, ok := c.Get("aaa")
+		require.False(t, ok)
+
+		_, ok = c.Get("bbb")
+		require.False(t, ok)
 	})
+}
+
+func TestCachePushingOutElementWhenCountAddedGreaterThanCapacity(t *testing.T) {
+	c := NewCache(3)
+
+	wasInCache := c.Set("KEY_1", 1)
+	require.False(t, wasInCache)
+
+	wasInCache = c.Set("KEY_2", 2)
+	require.False(t, wasInCache)
+
+	wasInCache = c.Set("KEY_3", 3)
+	require.False(t, wasInCache)
+
+	wasInCache = c.Set("KEY_4", 4)
+	require.False(t, wasInCache)
+
+	_, ok := c.Get("KEY_1")
+	require.False(t, ok)
+}
+
+func TestCachePushingOutOldElementWhenCapacityExceeded(t *testing.T) {
+	c := NewCache(3)
+
+	wasInCache := c.Set("KEY_1", 1)
+	require.False(t, wasInCache)
+
+	wasInCache = c.Set("KEY_2", 2)
+	require.False(t, wasInCache)
+
+	wasInCache = c.Set("KEY_3", 3)
+	require.False(t, wasInCache)
+
+	_, ok := c.Get("KEY_2")
+	require.True(t, ok)
+
+	_, ok = c.Get("KEY_3")
+	require.True(t, ok)
+
+	_, ok = c.Get("KEY_1")
+	require.True(t, ok)
+
+	wasInCache = c.Set("KEY_4", 4)
+	require.False(t, wasInCache)
+
+	_, ok = c.Get("KEY_2")
+	require.False(t, ok)
 }
 
 func TestCacheMultithreading(t *testing.T) {

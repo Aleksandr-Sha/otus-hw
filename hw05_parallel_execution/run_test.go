@@ -61,7 +61,7 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
-	t.Run("return ErrErrorsLimitExceeded when errors in middle tasks", func(t *testing.T) {
+	t.Run("finished not all tasks when return ErrErrorsLimitExceeded when errors in middle tasks", func(t *testing.T) {
 		tasksCount := 30
 		tasks := make([]Task, 0, tasksCount)
 
@@ -93,7 +93,7 @@ func TestRun(t *testing.T) {
 		require.Less(t, runTasksCount, int32(tasksCount), "run all tasks")
 	})
 
-	t.Run("return ErrErrorsLimitExceeded when errors in last tasks", func(t *testing.T) {
+	t.Run("finished all tasks when return ErrErrorsLimitExceeded when errors in last tasks", func(t *testing.T) {
 		tasksCount := 30
 		tasks := make([]Task, 0, tasksCount)
 
@@ -119,7 +119,7 @@ func TestRun(t *testing.T) {
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks run")
 	})
 
-	t.Run("success run all tasks when errors do not exceed the limit", func(t *testing.T) {
+	t.Run("finished all tasks when errors do not exceed the limit", func(t *testing.T) {
 		tasksCount := 30
 		tasks := make([]Task, 0, tasksCount)
 

@@ -148,6 +148,24 @@ func TestRun(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks run")
 	})
+
+	t.Run("return ErrErrorsLimitExceeded when M equal zero", func(t *testing.T) {
+		tasksCount := 5
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+
+		for i := 0; i < tasksCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
+
+		workersCount := 2
+		maxErrorsCount := 0
+
+		err := Run(tasks, workersCount, maxErrorsCount)
+
+		require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+	})
 }
 
 func createTaskSuccess(runTasksCount *int32, d time.Duration) func() error {

@@ -61,99 +61,93 @@ func TestRun(t *testing.T) {
 		require.LessOrEqual(t, int64(elapsedTime), int64(sumTime/2), "tasks were run sequentially?")
 	})
 
-	t.Run( // todo ошибки в середине процесса
-		"if were errors in first M tasks, than finished not more N+M tasks when not all tasks with errors",
-		func(t *testing.T) {
-			tasksCount := 30
-			tasks := make([]Task, 0, tasksCount)
+	t.Run("return ErrErrorsLimitExceeded when errors in middle tasks", func(t *testing.T) {
+		tasksCount := 30
+		tasks := make([]Task, 0, tasksCount)
 
-			var runTasksCount int32
-			successTaskBeforeErrorCount := 10
+		var runTasksCount int32
+		successTaskBeforeErrorCount := 10
 
-			// Задачи, которые должны выполниться успешно в начале
-			for i := 0; i < successTaskBeforeErrorCount; i++ {
-				tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
-			}
+		for i := 0; i < successTaskBeforeErrorCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
 
-			var maxErrorsCount int
-			indexLastError := 12
+		var maxErrorsCount int
+		indexLastError := 12
 
-			for i := successTaskBeforeErrorCount; i < indexLastError; i++ {
-				maxErrorsCount++
-				tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*50))
-			}
+		for i := successTaskBeforeErrorCount; i < indexLastError; i++ {
+			maxErrorsCount++
+			tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*50))
+		}
 
-			for i := indexLastError; i < tasksCount; i++ {
-				tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
-			}
+		for i := indexLastError; i < tasksCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
 
-			workersCount := 4
+		workersCount := 4
 
-			err := Run(tasks, workersCount, maxErrorsCount)
+		err := Run(tasks, workersCount, maxErrorsCount)
 
-			require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
-			require.Greater(t, runTasksCount, int32(maxErrorsCount+workersCount), "")
-			require.Less(t, runTasksCount, int32(tasksCount), "")
-		})
+		require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+		require.Greater(t, runTasksCount, int32(maxErrorsCount+workersCount), "run task count less or equal N + M")
+		require.Less(t, runTasksCount, int32(tasksCount), "run all tasks")
+	})
 
-	t.Run( // todo выполняются все таски но всё равно ошибка так как последние таски будут с error
-		"",
-		func(t *testing.T) {
-			tasksCount := 30
-			tasks := make([]Task, 0, tasksCount)
+	t.Run("return ErrErrorsLimitExceeded when errors in last tasks", func(t *testing.T) {
+		tasksCount := 30
+		tasks := make([]Task, 0, tasksCount)
 
-			var runTasksCount int32
-			successTaskCount := 28
+		var runTasksCount int32
+		successTaskCount := 28
 
-			// Задачи, которые должны выполниться успешно в начале
-			for i := 0; i < successTaskCount; i++ {
-				tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
-			}
+		for i := 0; i < successTaskCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
 
-			var maxErrorsCount int
+		var maxErrorsCount int
 
-			for i := successTaskCount; i < tasksCount; i++ {
-				maxErrorsCount++
-				tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*100))
-			}
+		for i := successTaskCount; i < tasksCount; i++ {
+			maxErrorsCount++
+			tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*100))
+		}
 
-			workersCount := 4
+		workersCount := 4
 
-			err := Run(tasks, workersCount, maxErrorsCount)
+		err := Run(tasks, workersCount, maxErrorsCount)
 
-			require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
-			require.Equal(t, runTasksCount, int32(tasksCount), "")
-		})
+		require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks run")
+	})
 
-	t.Run( // TODO Колицество ошибок не привышает лимит
-		"",
-		func(t *testing.T) {
-			tasksCount := 30
-			tasks := make([]Task, 0, tasksCount)
+	t.Run("success run all tasks when errors do not exceed the limit", func(t *testing.T) {
+		tasksCount := 30
+		tasks := make([]Task, 0, tasksCount)
 
-			var runTasksCount int32
+		var runTasksCount int32
+		successTaskBeforeErrorCount := 10
 
-			// Задачи, которые должны выполниться успешно в начале
-			for i := 0; i < 10; i++ {
-				tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
-			}
+		for i := 0; i < successTaskBeforeErrorCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
 
-			for i := 10; i < 12; i++ {
-				tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*50))
-			}
+		indexLastError := 12
 
-			for i := 12; i < tasksCount; i++ {
-				tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
-			}
+		for i := successTaskBeforeErrorCount; i < indexLastError; i++ {
+			tasks = append(tasks, createTaskError(&runTasksCount, i, time.Millisecond*50))
+		}
 
-			workersCount := 4
-			maxErrorsCount := 3
+		for i := indexLastError; i < tasksCount; i++ {
+			tasks = append(tasks, createTaskSuccess(&runTasksCount, time.Millisecond*50))
+		}
 
-			err := Run(tasks, workersCount, maxErrorsCount)
+		workersCount := 4
+		maxErrorsCount := 3
 
-			require.NoError(t, err)
-			require.Equal(t, runTasksCount, int32(tasksCount), "")
-		})
+		err := Run(tasks, workersCount, maxErrorsCount)
+
+		require.NoError(t, err)
+		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks run")
+	})
 }
 
 func createTaskSuccess(runTasksCount *int32, d time.Duration) func() error {

@@ -23,6 +23,10 @@ type TaskExecutor struct {
 	errorHandlerWaitGroup *sync.WaitGroup
 }
 
+func newTaskExecutor(maxErrorCount, workersCount int) *TaskExecutor {
+	return &TaskExecutor{maxErrorCount: maxErrorCount, workersCount: workersCount}
+}
+
 func (e *TaskExecutor) run(tasks []Task) error {
 	e.initChan()
 
@@ -111,10 +115,6 @@ func (e *TaskExecutor) finishProcess() {
 
 	close(e.chError)
 	e.errorHandlerWaitGroup.Wait()
-}
-
-func newTaskExecutor(maxErrorCount, workersCount int) *TaskExecutor {
-	return &TaskExecutor{maxErrorCount: maxErrorCount, workersCount: workersCount}
 }
 
 func Run(tasks []Task, n, m int) error {

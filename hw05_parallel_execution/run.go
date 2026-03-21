@@ -29,7 +29,7 @@ func (e *TaskExecutor) run(tasks []Task) error {
 	e.createWorkers()
 	e.createErrorHandler()
 
-	err := e.loadTasks(tasks)
+	err := e.runTasks(tasks)
 	if err != nil {
 		e.finishProcess()
 		return fmt.Errorf("load tasks: %w", err)
@@ -88,7 +88,7 @@ func (e *TaskExecutor) createErrorHandler() {
 	}()
 }
 
-func (e *TaskExecutor) loadTasks(tasks []Task) error {
+func (e *TaskExecutor) runTasks(tasks []Task) error {
 	for i := 0; i < len(tasks); {
 		if atomic.LoadInt64(&e.errorCount) >= int64(e.maxErrorCount) {
 			return ErrErrorsLimitExceeded

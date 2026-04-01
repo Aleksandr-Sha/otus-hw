@@ -1,6 +1,7 @@
 package hw06pipelineexecution
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -96,16 +97,19 @@ func TestPipeline(t *testing.T) {
 func TestAllStageStop(t *testing.T) {
 	wg := sync.WaitGroup{}
 	// Stage generator
-	g := func(_ string, f func(v interface{}) interface{}) Stage {
+	g := func(s string, f func(v interface{}) interface{}) Stage {
 		return func(in In) Out {
 			out := make(Bi)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				defer close(out)
-				for v := range in {
+				defer func() {
+					fmt.Println("Закрываем out " + s)
+					close(out)
+				}()
+				for v := range in { // тут?
 					time.Sleep(sleepPerStage)
-					out <- f(v)
+					out <- f(v) // Это значение никогда не будет прочитано
 				}
 			}()
 			return out
@@ -122,7 +126,7 @@ func TestAllStageStop(t *testing.T) {
 	t.Run("done case", func(t *testing.T) {
 		in := make(Bi)
 		done := make(Bi)
-		data := []int{1, 2, 3, 4, 5}
+		data := []int{1}
 
 		// Abort after 200ms
 		abortDur := sleepPerStage * 2
@@ -145,6 +149,5 @@ func TestAllStageStop(t *testing.T) {
 		wg.Wait()
 
 		require.Len(t, result, 0)
-
 	})
 }

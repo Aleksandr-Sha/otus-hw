@@ -1,7 +1,6 @@
 package hw06pipelineexecution
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -104,12 +103,11 @@ func TestAllStageStop(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				defer func() {
-					fmt.Println("Закрываем out " + s)
 					close(out)
 				}()
-				for v := range in { // тут?
+				for v := range in {
 					time.Sleep(sleepPerStage)
-					out <- f(v) // Это значение никогда не будет прочитано
+					out <- f(v)
 				}
 			}()
 			return out

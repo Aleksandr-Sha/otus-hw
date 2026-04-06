@@ -8,40 +8,52 @@ type (
 
 type Stage func(in In) (out Out)
 
+const CurrentStageIndex = 0
+
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	return stageRunWithSubSlice(stages, in, done)
+	return runStagesWithProxy(in, done, stages)
 }
 
-func stageRunWithSubSlice(stage []Stage, in In, done In) Out {
-	inWrap := make(Bi)
+func runStagesWithProxy(in In, done In, stage []Stage) Out {
+	inProxy := make(Bi)
 
 	go func() {
 		defer func() {
-			close(inWrap)
-			<-in // Читаем значение на случай, если у нас горутина исполняющая stage успела зайти в range
-			// с записью в канал out, но читателей уже не осталось
+			close(inProxy)
+			// Ждём пока закроется канал вывода информации с предыдущего stage (в рамках stage канал out), обеспечив
+			// тем самым гарантированный выход из for range внутри stage
+			waitCloseChan(in)
 		}()
 		for {
 			select {
-			// А что тут будет в тот момент, когда будет и значение в in и done закроется?
 			case <-done:
 				return
-			case v, ok := <-in:
-
-				if !ok {
+			default:
+				select {
+				case <-done:
 					return
-				}
+				case v, ok := <-in:
 
-				inWrap <- v
+					if !ok {
+						return
+					}
+
+					inProxy <- v
+				}
 			}
 		}
 	}()
 
+	out := stage[CurrentStageIndex](inProxy)
+
 	if len(stage) > 1 {
-		return stageRunWithSubSlice(stage[1:], stage[0](inWrap), done)
+		return runStagesWithProxy(out, done, stage[1:])
 	}
 
-	return stage[0](inWrap)
+	return out
 }
 
-// Пробный вариант с подслайсом
+func waitCloseChan(in In) {
+	for range in {
+	}
+}

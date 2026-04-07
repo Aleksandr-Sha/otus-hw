@@ -95,22 +95,7 @@ func TestPipeline(t *testing.T) {
 
 func TestAllStageStopWhenDone(t *testing.T) {
 	wg := sync.WaitGroup{}
-	// Stage generator
-	g := func(s string, f func(v interface{}) interface{}) Stage {
-		return func(in In) Out {
-			out := make(Bi)
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer close(out)
-				for v := range in {
-					time.Sleep(sleepPerStage)
-					out <- f(v)
-				}
-			}()
-			return out
-		}
-	}
+	g := createStageGenerator(&wg)
 
 	stages := []Stage{
 		g("Dummy", func(v interface{}) interface{} { return v }),
@@ -150,22 +135,7 @@ func TestAllStageStopWhenDone(t *testing.T) {
 
 func TestAllStageStopWhenProcessAllData(t *testing.T) {
 	wg := sync.WaitGroup{}
-	// Stage generator
-	g := func(s string, f func(v interface{}) interface{}) Stage {
-		return func(in In) Out {
-			out := make(Bi)
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer close(out)
-				for v := range in {
-					time.Sleep(sleepPerStage)
-					out <- f(v)
-				}
-			}()
-			return out
-		}
-	}
+	g := createStageGenerator(&wg)
 
 	stages := []Stage{
 		g("Dummy", func(v interface{}) interface{} { return v }),
@@ -192,4 +162,93 @@ func TestAllStageStopWhenProcessAllData(t *testing.T) {
 	wg.Wait()
 
 	require.Equal(t, []string{"102", "104", "106", "108", "110"}, result)
+}
+
+func TestWhenOneStage(t *testing.T) {
+	wg := sync.WaitGroup{}
+	g := createStageGenerator(&wg)
+
+	stages := []Stage{
+		g("Multiplier (* 2)", func(v interface{}) interface{} { return v.(int) * 2 }),
+	}
+
+	in := make(Bi)
+	data := []int{1, 2, 3, 4, 5}
+
+	go func() {
+		for _, v := range data {
+			in <- v
+		}
+		close(in)
+	}()
+
+	result := make([]int, 0, 10)
+	for s := range ExecutePipeline(in, nil, stages...) {
+		result = append(result, s.(int))
+	}
+
+	wg.Wait()
+
+	require.Equal(t, []int{2, 4, 6, 8, 10}, result)
+}
+
+func TestWhenZeroStage(t *testing.T) {
+	in := make(Bi)
+	data := []int{1, 2, 3, 4, 5}
+
+	go func() {
+		for _, v := range data {
+			in <- v
+		}
+		close(in)
+	}()
+
+	result := make([]int, 0, 10)
+	for s := range ExecutePipeline(in, nil, []Stage{}...) {
+		result = append(result, s.(int))
+	}
+
+	require.Equal(t, []int{1, 2, 3, 4, 5}, result)
+}
+
+func TestWhenZeroStageAndDone(t *testing.T) {
+	in := make(Bi)
+	done := make(Bi)
+	data := []int{1, 2, 3, 4, 5}
+
+	go func() {
+		close(done)
+	}()
+
+	go func() {
+		for _, v := range data {
+			in <- v
+		}
+		close(in)
+	}()
+
+	result := make([]int, 0, 10)
+	for s := range ExecutePipeline(in, done, []Stage{}...) {
+		result = append(result, s.(int))
+	}
+
+	require.Len(t, result, 0)
+}
+
+func createStageGenerator(wg *sync.WaitGroup) func(_ string, f func(v interface{}) interface{}) Stage {
+	return func(_ string, f func(v interface{}) interface{}) Stage {
+		return func(in In) Out {
+			out := make(Bi)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				defer close(out)
+				for v := range in {
+					time.Sleep(sleepPerStage)
+					out <- f(v)
+				}
+			}()
+			return out
+		}
+	}
 }

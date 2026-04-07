@@ -11,16 +11,38 @@ type Stage func(in In) (out Out)
 const CurrentStageIndex = 0
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	return runStagesWithProxy(in, done, stages)
+	if len(stages) == 0 {
+		return runWithoutStages(in, done)
+	}
+
+	return runStages(in, done, stages)
 }
 
-func runStagesWithProxy(in In, done In, stage []Stage) Out {
+func runStages(in In, done In, stage []Stage) Out {
 	inProxy := make(Bi)
 
-	go func() {
+	go readInputDataAndProxy(in, done, inProxy)
+
+	out := stage[CurrentStageIndex](inProxy)
+
+	if len(stage) > 1 {
+		return runStages(out, done, stage[1:])
+	}
+
+	return out
+}
+
+func runWithoutStages(in In, done In) Out {
+	out := make(Bi)
+	go readInputDataAndProxy(in, done, out)
+	return out
+}
+
+func readInputDataAndProxy(in In, done In, inProxy Bi) {
+	func() {
 		defer func() {
 			close(inProxy)
-			// Ждём пока закроется канал вывода информации с предыдущего stage (в рамках stage канал out), обеспечив
+			// Ждём пока закроется канал вывода информации с предыдущего stage (в рамках stage канал inProxy), обеспечив
 			// тем самым гарантированный выход из for range внутри stage
 			waitCloseChan(in)
 		}()
@@ -43,14 +65,6 @@ func runStagesWithProxy(in In, done In, stage []Stage) Out {
 			}
 		}
 	}()
-
-	out := stage[CurrentStageIndex](inProxy)
-
-	if len(stage) > 1 {
-		return runStagesWithProxy(out, done, stage[1:])
-	}
-
-	return out
 }
 
 func waitCloseChan(in In) {

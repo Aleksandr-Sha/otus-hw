@@ -15,19 +15,7 @@ const (
 )
 
 func TestPipeline(t *testing.T) {
-	g := func(_ string, f func(v interface{}) interface{}) Stage {
-		return func(in In) Out {
-			out := make(Bi)
-			go func() {
-				defer close(out)
-				for v := range in {
-					time.Sleep(sleepPerStage)
-					out <- f(v)
-				}
-			}()
-			return out
-		}
-	}
+	g := createStageGeneratorWithoutWg()
 
 	stages := []Stage{
 		g("Dummy", func(v interface{}) interface{} { return v }),
@@ -62,7 +50,7 @@ func TestPipeline(t *testing.T) {
 		data := []int{1, 2, 3, 4, 5}
 
 		abortDur := sleepPerStage * 2
-		go closeDoneChanAfterTimeOut(abortDur, done)
+		go closeDoneChanAfterTimeout(abortDur, done)
 		go writeInputData(data, in)
 
 		result := make([]string, 0, 10)
@@ -79,7 +67,7 @@ func TestPipeline(t *testing.T) {
 
 func TestAllStageStopWhenDone(t *testing.T) {
 	wg := sync.WaitGroup{}
-	g := createStageGenerator(&wg)
+	g := createStageGeneratorWithWg(&wg)
 
 	stages := []Stage{
 		g("Dummy", func(v interface{}) interface{} { return v }),
@@ -93,7 +81,7 @@ func TestAllStageStopWhenDone(t *testing.T) {
 		done := make(Bi)
 		data := []int{1, 2, 3, 4, 5}
 
-		go closeDoneChanAfterTimeOut(sleepPerStage*2, done)
+		go closeDoneChanAfterTimeout(sleepPerStage*2, done)
 		go writeInputData(data, in)
 
 		result := make([]string, 0, 10)
@@ -108,7 +96,7 @@ func TestAllStageStopWhenDone(t *testing.T) {
 
 func TestAllStageStopWhenProcessAllData(t *testing.T) {
 	wg := sync.WaitGroup{}
-	g := createStageGenerator(&wg)
+	g := createStageGeneratorWithWg(&wg)
 
 	stages := []Stage{
 		g("Dummy", func(v interface{}) interface{} { return v }),
@@ -134,11 +122,9 @@ func TestAllStageStopWhenProcessAllData(t *testing.T) {
 
 func TestOneStageWhenProcessAllData(t *testing.T) {
 	wg := sync.WaitGroup{}
-	g := createStageGenerator(&wg)
+	g := createStageGeneratorWithWg(&wg)
 
-	stages := []Stage{
-		g("Multiplier (* 2)", func(v interface{}) interface{} { return v.(int) * 2 }),
-	}
+	stages := []Stage{g("Multiplier (* 2)", func(v interface{}) interface{} { return v.(int) * 2 })}
 
 	in := make(Bi)
 	data := []int{1, 2, 3, 4, 5}
@@ -185,7 +171,23 @@ func TestZeroStageWhenDone(t *testing.T) {
 	require.Len(t, result, 0)
 }
 
-func createStageGenerator(wg *sync.WaitGroup) func(_ string, f func(v interface{}) interface{}) Stage {
+func createStageGeneratorWithoutWg() func(_ string, f func(v interface{}) interface{}) Stage {
+	return func(_ string, f func(v interface{}) interface{}) Stage {
+		return func(in In) Out {
+			out := make(Bi)
+			go func() {
+				defer close(out)
+				for v := range in {
+					time.Sleep(sleepPerStage)
+					out <- f(v)
+				}
+			}()
+			return out
+		}
+	}
+}
+
+func createStageGeneratorWithWg(wg *sync.WaitGroup) func(_ string, f func(v interface{}) interface{}) Stage {
 	return func(_ string, f func(v interface{}) interface{}) Stage {
 		return func(in In) Out {
 			out := make(Bi)
@@ -212,7 +214,7 @@ func writeInputData(data []int, in Bi) {
 	}()
 }
 
-func closeDoneChanAfterTimeOut(abortDur time.Duration, done Bi) {
+func closeDoneChanAfterTimeout(abortDur time.Duration, done Bi) {
 	func() {
 		<-time.After(abortDur)
 		close(done)

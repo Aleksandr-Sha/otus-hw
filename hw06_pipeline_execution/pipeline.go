@@ -70,6 +70,11 @@ func readInputDataAndProxy(in In, done In, inProxy Bi) {
 }
 
 func waitCloseChan(in In) {
-	for range in {
+	for {
+		_, ok := <-in
+
+		if !ok {
+			return
+		}
 	}
 }

@@ -42,7 +42,7 @@ func readInputDataAndProxy(in In, done In, inProxy Bi) {
 	func() {
 		defer func() {
 			close(inProxy)
-			// Ждём пока закроется канал вывода информации с предыдущего stage (в рамках stage канал inProxy), обеспечив
+			// Ждём пока закроется канал вывода информации с предыдущего stage (в рамках stage канал out), обеспечив
 			// тем самым гарантированный выход из for range внутри stage
 			waitCloseChan(in)
 		}()

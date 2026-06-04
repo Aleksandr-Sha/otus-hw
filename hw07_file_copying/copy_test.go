@@ -99,7 +99,7 @@ func getResultFileAnsCompareWithExpected(t *testing.T, tempDir, pathToExpectedFi
 func removeTempDir(name string) {
 	err := os.RemoveAll(name)
 	if err != nil {
-		log.Printf("error removing temp dir %q: %v", name, err)
+		log.Printf("Error removing temp dir %q: %v", name, err)
 	}
 }
 

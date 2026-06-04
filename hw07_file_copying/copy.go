@@ -16,7 +16,7 @@ const TmpFileNamePattern = "tmp_for_copy"
 var ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
-	fileForCopyFrom, stat, err := preparingFileForCopyFrom(fromPath, offset)
+	fileForCopyFrom, fileForCopyInfo, err := preparingFileForCopyFrom(fromPath, offset)
 	if err != nil {
 		return fmt.Errorf("prepare file for copy from: %w", err)
 	}
@@ -28,7 +28,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 	defer closeFileWithErrorHandle(tempFileForCopyTo)
 
-	bar, proxyReader := getReaderProxyWithProgressBar(fileForCopyFrom, stat, offset, limit)
+	bar, proxyReader := getReaderProxyWithProgressBar(fileForCopyFrom, fileForCopyInfo, offset, limit)
 	defer bar.Finish()
 
 	err = copyData(proxyReader, tempFileForCopyTo, limit)

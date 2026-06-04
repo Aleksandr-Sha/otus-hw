@@ -26,12 +26,12 @@ func (c *CopySetting) checkPaths() error {
 func main() {
 	settings, err := parseCopySettings()
 	if err != nil {
-		log.Fatal("Parse settings failed: ", err)
+		log.Printf("Error parsing settings: %v", err)
 	}
 
 	err = Copy(settings.from, settings.to, settings.offset, settings.limit)
 	if err != nil {
-		log.Fatal("Copy failed: ", err)
+		log.Printf("Error copying files: %v", err)
 	}
 }
 

@@ -32,25 +32,9 @@ func TestCopy(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			err = Copy("testdata/input.txt", temp, test.offset, test.limit)
-
-			pathToResult, err := getResultFilePath(temp)
 			require.NoError(t, err)
 
-			resultFile, err := os.Open(pathToResult)
-			require.NoError(t, err)
-
-			defer closeFile(resultFile)
-			defer removeTempFile(pathToResult)
-
-			resultBuffer := getBytesFromFile(resultFile, t)
-
-			expectedFile, err := os.Open(test.pathToExpectedFile)
-			require.NoError(t, err)
-			defer closeFile(expectedFile)
-
-			expectedBuffer := getBytesFromFile(expectedFile, t)
-
-			require.Equal(t, expectedBuffer, resultBuffer)
+			getResultFileAnsCompareWithExpected(t, temp, test.pathToExpectedFile)
 		})
 	}
 }
@@ -74,24 +58,7 @@ func TestCopyWhenEOF(t *testing.T) {
 			err = Copy("testdata/input.txt", temp, test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
 
-			pathToResult, err := getResultFilePath(temp)
-			require.NoError(t, err)
-
-			resultFile, err := os.Open(pathToResult)
-			require.NoError(t, err)
-
-			defer closeFile(resultFile)
-			defer removeTempFile(pathToResult)
-
-			resultBuffer := getBytesFromFile(resultFile, t)
-
-			expectedFile, err := os.Open(test.pathToExpectedFile)
-			require.NoError(t, err)
-			defer closeFile(expectedFile)
-
-			expectedBuffer := getBytesFromFile(expectedFile, t)
-
-			require.Equal(t, expectedBuffer, resultBuffer)
+			getResultFileAnsCompareWithExpected(t, temp, test.pathToExpectedFile)
 		})
 	}
 }
@@ -99,6 +66,29 @@ func TestCopyWhenEOF(t *testing.T) {
 func TestCopyWhenOffsetGreaterFileSize(t *testing.T) {
 	err := Copy("testdata/input.txt", "", 1_000_000_000_000_000, 0)
 	require.Truef(t, errors.Is(err, ErrOffsetExceedsFileSize), "actual error %q", err)
+}
+
+func getResultFileAnsCompareWithExpected(t *testing.T, tempDir, pathToExpectedFile string) {
+	pathToResult, err := getResultFilePath(tempDir)
+	require.NoError(t, err)
+
+	resultFile, err := os.Open(pathToResult)
+	require.NoError(t, err)
+
+	defer func() {
+		closeFile(resultFile)
+		removeTempFile(pathToResult)
+	}()
+
+	resultBuffer := getBytesFromFile(resultFile, t)
+
+	expectedFile, err := os.Open(pathToExpectedFile)
+	require.NoError(t, err)
+	defer closeFile(expectedFile)
+
+	expectedBuffer := getBytesFromFile(expectedFile, t)
+
+	require.Equal(t, expectedBuffer, resultBuffer)
 }
 
 func removeTempDir(name string) {

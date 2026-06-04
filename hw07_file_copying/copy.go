@@ -4,39 +4,48 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/cheggaaa/pb/v3"
 )
 
+const TmpFileNamePattern = "tmp_for_copy"
+
 var (
-	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
 	fileForCopyFrom, stat, err := preparingFileForCopyFrom(fromPath, offset)
 	if err != nil {
-		return fmt.Errorf("prepeare file for copy from: %w", err)
+		return fmt.Errorf("prepare file for copy from: %w", err)
 	}
+	defer closeFileWithErrorHandle(fileForCopyFrom)
 
 	tempFileForCopyTo, err := preparingTempFileForCopyTo(toPath)
 	if err != nil {
-		return fmt.Errorf("prepeare temp file for copy to : %w", err)
+		return fmt.Errorf("prepare temp file for copy to : %w", err)
 	}
+	defer closeFileWithErrorHandle(tempFileForCopyTo)
 
 	bar, proxyReader := getReaderWithProgressBar(fileForCopyFrom, stat, offset, limit)
+	defer bar.Finish()
 
 	err = copyData(proxyReader, tempFileForCopyTo, limit)
 	if err != nil {
 		return fmt.Errorf("copy data : %w", err)
 	}
 
-	bar.Finish()
-	// Писать будем во временный файл, важно не забыть удалить его через Remove
-
 	return nil
+}
+
+func closeFileWithErrorHandle(fileForCopyFrom *os.File) {
+	err := fileForCopyFrom.Close()
+	if err != nil {
+		log.Printf("close file for copy from: %s", err.Error())
+	}
 }
 
 func copyData(reader io.Reader, writer io.Writer, limit int64) error {
@@ -61,47 +70,49 @@ func getReaderWithProgressBar(fileForCopyFrom *os.File, stat os.FileInfo, offset
 }
 
 func preparingTempFileForCopyTo(toPath string) (*os.File, error) {
-	abs, err := filepath.Abs(toPath)
+	absPath, err := filepath.Abs(toPath)
 	if err != nil {
 		return nil, fmt.Errorf("get file path: %w", err)
 	}
 
-	temp, err := os.CreateTemp(abs, "tmp_for_copy")
+	file, err := os.CreateTemp(absPath, TmpFileNamePattern)
 	if err != nil {
 		return nil, fmt.Errorf("create file: %w", err)
 	}
 
-	return temp, nil
+	return file, nil
 }
 
 func preparingFileForCopyFrom(fromPath string, offset int64) (*os.File, os.FileInfo, error) {
-	abs, err := filepath.Abs(fromPath)
+	absPath, err := filepath.Abs(fromPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get file path: %w", err)
 	}
 
-	open, err := os.Open(abs)
+	file, err := os.Open(absPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open file: %w", err)
+		return nil, nil, fmt.Errorf("file file: %w", err)
 	}
 
-	stat, err := open.Stat()
+	fileInfo, err := file.Stat()
 	if err != nil {
-		return nil, nil, fmt.Errorf("get file stat: %w", err)
+		return nil, nil, fmt.Errorf("get file fileInfo: %w", err)
 	}
 
 	if offset > 0 {
-		if stat.Size() < offset {
+		if fileInfo.Size() < offset {
+			closeFileWithErrorHandle(file)
 			return nil, nil, ErrOffsetExceedsFileSize
 		}
 
-		_, err := open.Seek(offset, io.SeekStart)
+		_, err := file.Seek(offset, io.SeekStart)
 		if err != nil {
+			closeFileWithErrorHandle(file)
 			return nil, nil, fmt.Errorf("seek by offset : %w", err)
 		}
 	}
 
-	return open, stat, nil
+	return file, fileInfo, nil
 }
 
 func getBarSize(stat os.FileInfo, offset, limit int64) int64 {

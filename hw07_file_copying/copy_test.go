@@ -11,10 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const TempDirPattern = "test_temp_dir"
+
 func TestCopy(t *testing.T) {
-	temp, err := os.MkdirTemp(".", "my_temp_dir")
+	temp, err := os.MkdirTemp(".", TempDirPattern)
 	require.NoError(t, err)
-	defer os.RemoveAll(temp)
+	defer removeTempDir(temp)
 
 	tests := []struct {
 		offset             int64
@@ -54,9 +56,9 @@ func TestCopy(t *testing.T) {
 }
 
 func TestCopyWhenEOF(t *testing.T) {
-	temp, err := os.MkdirTemp(".", "my_temp_dir")
+	temp, err := os.MkdirTemp(".", TempDirPattern)
 	require.NoError(t, err)
-	defer os.RemoveAll(temp)
+	defer removeTempDir(temp)
 
 	tests := []struct {
 		offset             int64
@@ -97,6 +99,13 @@ func TestCopyWhenEOF(t *testing.T) {
 func TestCopyWhenOffsetGreaterFileSize(t *testing.T) {
 	err := Copy("testdata/input.txt", "", 1_000_000_000_000_000, 0)
 	require.Truef(t, errors.Is(err, ErrOffsetExceedsFileSize), "actual error %q", err)
+}
+
+func removeTempDir(name string) {
+	err := os.RemoveAll(name)
+	if err != nil {
+		log.Printf("error removing temp dir %q: %v", name, err)
+	}
 }
 
 func removeTempFile(name string) {

@@ -47,7 +47,7 @@ func preparingFileForCopyFrom(fromPath string, offset int64) (*os.File, os.FileI
 
 	file, err := os.Open(absPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("file file: %w", err)
+		return nil, nil, fmt.Errorf("file open: %w", err)
 	}
 
 	fileInfo, err := file.Stat()

@@ -85,7 +85,9 @@ func preparingTempFileForCopyTo(toPath string) (*os.File, error) {
 	return file, nil
 }
 
-func getReaderProxyWithProgressBar(fileForCopyFrom *os.File, stat os.FileInfo, offset, limit int64) (*pb.ProgressBar, io.Reader) {
+func getReaderProxyWithProgressBar(
+	fileForCopyFrom *os.File, stat os.FileInfo, offset, limit int64,
+) (*pb.ProgressBar, io.Reader) {
 	bar := pb.Full.Start64(getBarSize(stat, offset, limit))
 	return bar, bar.NewProxyReader(fileForCopyFrom)
 }

@@ -74,6 +74,8 @@ func TestCopyWhenNotExistentFile(t *testing.T) {
 }
 
 func getResultFileAnsCompareWithExpected(t *testing.T, tempDir, pathToExpectedFile string) {
+	t.Helper()
+
 	pathToResult, err := getResultFilePath(tempDir)
 	require.NoError(t, err)
 
@@ -85,13 +87,13 @@ func getResultFileAnsCompareWithExpected(t *testing.T, tempDir, pathToExpectedFi
 		removeTempFile(pathToResult)
 	}()
 
-	resultBuffer := getBytesFromFile(resultFile, t)
+	resultBuffer := getBytesFromFile(t, resultFile)
 
 	expectedFile, err := os.Open(pathToExpectedFile)
 	require.NoError(t, err)
 	defer closeFile(expectedFile)
 
-	expectedBuffer := getBytesFromFile(expectedFile, t)
+	expectedBuffer := getBytesFromFile(t, expectedFile)
 
 	require.Equal(t, expectedBuffer, resultBuffer)
 }
@@ -117,7 +119,9 @@ func closeFile(expectedFile *os.File) {
 	}
 }
 
-func getBytesFromFile(file *os.File, t *testing.T) []byte {
+func getBytesFromFile(t *testing.T, file *os.File) []byte {
+	t.Helper()
+
 	info, err := file.Stat()
 	require.NoError(t, err)
 

@@ -68,6 +68,11 @@ func TestCopyWhenOffsetGreaterFileSize(t *testing.T) {
 	require.Truef(t, errors.Is(err, ErrOffsetExceedsFileSize), "actual error %q", err)
 }
 
+func TestCopyWhenNotExistentFile(t *testing.T) {
+	err := Copy("testdata/not_existent.txt", "", 0, 0)
+	require.Truef(t, errors.Is(err, os.ErrNotExist), "actual error %q", err)
+}
+
 func getResultFileAnsCompareWithExpected(t *testing.T, tempDir, pathToExpectedFile string) {
 	pathToResult, err := getResultFilePath(tempDir)
 	require.NoError(t, err)

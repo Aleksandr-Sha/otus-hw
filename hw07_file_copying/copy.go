@@ -11,8 +11,6 @@ import (
 	"github.com/cheggaaa/pb/v3"
 )
 
-const TmpFileNamePattern = "tmp_for_copy*.txt"
-
 var ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
@@ -22,16 +20,16 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 	defer closeFileWithErrorHandle(fileForCopyFrom)
 
-	tempFileForCopyTo, err := preparingTempFileForCopyTo(toPath)
+	fileForCopyTo, err := preparingFileForCopyTo(toPath)
 	if err != nil {
 		return fmt.Errorf("prepare temp file for copy to : %w", err)
 	}
-	defer closeFileWithErrorHandle(tempFileForCopyTo)
+	defer closeFileWithErrorHandle(fileForCopyTo)
 
 	bar, proxyReader := getReaderProxyWithProgressBar(fileForCopyFrom, fileForCopyInfo, offset, limit)
 	defer bar.Finish()
 
-	err = copyData(proxyReader, tempFileForCopyTo, limit)
+	err = copyData(proxyReader, fileForCopyTo, limit)
 	if err != nil {
 		return fmt.Errorf("copy data : %w", err)
 	}
@@ -71,7 +69,7 @@ func preparingFileForCopyFrom(fromPath string, offset int64) (*os.File, os.FileI
 	return file, fileInfo, nil
 }
 
-func preparingTempFileForCopyTo(toPath string) (*os.File, error) {
+func preparingFileForCopyTo(toPath string) (*os.File, error) {
 	absPath, err := filepath.Abs(toPath)
 	if err != nil {
 		return nil, fmt.Errorf("get file path: %w", err)

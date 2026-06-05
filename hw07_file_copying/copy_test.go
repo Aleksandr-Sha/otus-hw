@@ -12,6 +12,7 @@ import (
 )
 
 const TempDirPattern = "test_temp_dir"
+const TmpFileNamePattern = "tmp_for_copy*.txt"
 
 func TestCopy(t *testing.T) {
 	temp, err := os.MkdirTemp(".", TempDirPattern)
@@ -31,40 +32,30 @@ func TestCopy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
-			err = Copy("testdata/input.txt", temp, test.offset, test.limit)
+			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
+
+			err = Copy("testdata/input.txt", tempFileForResult.Name(), test.offset, test.limit)
 			require.NoError(t, err)
 
-			// getResultFileAnsCompareWithExpected(t, temp, test.pathToExpectedFile)
+			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})
 	}
 }
 
-func TestCopy2(t *testing.T) {
+func TestCopyWhenFileNotExist(t *testing.T) {
 	temp, err := os.MkdirTemp(".", TempDirPattern)
 	require.NoError(t, err)
 	defer removeTempDir(temp)
 
-	tests := []struct {
-		offset             int64
-		limit              int64
-		pathToExpectedFile string
-	}{
-		{offset: 0, limit: 0, pathToExpectedFile: "testdata/out_offset0_limit0.txt"},
-		{offset: 0, limit: 10, pathToExpectedFile: "testdata/out_offset0_limit10.txt"},
-		{offset: 0, limit: 1000, pathToExpectedFile: "testdata/out_offset0_limit1000.txt"},
-		{offset: 100, limit: 1000, pathToExpectedFile: "testdata/out_offset100_limit1000.txt"},
-	}
+	pathForNewFile := filepath.Join(temp, "new_file.txt")
 
-	for _, test := range tests {
-		t.Run(test.pathToExpectedFile, func(t *testing.T) {
-			file, err := os.CreateTemp(temp, TmpFileNamePattern)
+	err = Copy("testdata/input.txt", pathForNewFile, 0, 0)
+	require.NoError(t, err)
 
-			err = Copy("testdata/input.txt", file.Name(), test.offset, test.limit)
-			require.NoError(t, err)
+	open, err := os.Open(pathForNewFile)
+	require.NoError(t, err)
 
-			getResultFileAnsCompareWithExpected(t, file, test.pathToExpectedFile)
-		})
-	}
+	getResultFileAnsCompareWithExpected(t, open, "testdata/out_offset0_limit0.txt")
 }
 
 func TestCopyWhenEOF(t *testing.T) {
@@ -83,10 +74,12 @@ func TestCopyWhenEOF(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
-			err = Copy("testdata/input.txt", temp, test.offset, test.limit)
+			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
+
+			err = Copy("testdata/input.txt", tempFileForResult.Name(), test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
 
-			// getResultFileAnsCompareWithExpected(t, temp, test.pathToExpectedFile)
+			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})
 	}
 }

@@ -40,8 +40,9 @@ func TestCopy(t *testing.T) {
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.NoError(t, err)
+			defer closeFile(tempFileForResult)
 
-			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
+			compareResultFileWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})
 	}
 }
@@ -56,10 +57,11 @@ func TestCopyWhenFileNotExist(t *testing.T) {
 	err = Copy(InputFilePath, pathForNewFile, 0, 0)
 	require.NoError(t, err)
 
-	open, err := os.Open(pathForNewFile)
+	resultFile, err := os.Open(pathForNewFile)
 	require.NoError(t, err)
+	defer closeFile(resultFile)
 
-	getResultFileAnsCompareWithExpected(t, open, "testdata/out_offset0_limit0.txt")
+	compareResultFileWithExpected(t, resultFile, "testdata/out_offset0_limit0.txt")
 }
 
 func TestCopyWhenEOF(t *testing.T) {
@@ -83,8 +85,9 @@ func TestCopyWhenEOF(t *testing.T) {
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
+			defer closeFile(tempFileForResult)
 
-			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
+			compareResultFileWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})
 	}
 }
@@ -99,12 +102,8 @@ func TestCopyWhenNotExistentFile(t *testing.T) {
 	require.Truef(t, errors.Is(err, os.ErrNotExist), "actual error %q", err)
 }
 
-func getResultFileAnsCompareWithExpected(t *testing.T, resultFile *os.File, pathToExpectedFile string) {
+func compareResultFileWithExpected(t *testing.T, resultFile *os.File, pathToExpectedFile string) {
 	t.Helper()
-
-	defer func() {
-		closeFile(resultFile)
-	}()
 
 	resultBuffer := getBytesFromFile(t, resultFile)
 

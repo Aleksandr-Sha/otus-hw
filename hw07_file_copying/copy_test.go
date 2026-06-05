@@ -11,8 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const TempDirPattern = "test_temp_dir"
-const TmpFileNamePattern = "tmp_for_copy*.txt"
+const (
+	TempDirPattern     = "test_temp_dir"
+	TmpFileNamePattern = "tmp_for_copy*.txt"
+	InputFilePath      = "testdata/input.txt"
+)
 
 func TestCopy(t *testing.T) {
 	temp, err := os.MkdirTemp(".", TempDirPattern)
@@ -34,7 +37,7 @@ func TestCopy(t *testing.T) {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
 
-			err = Copy("testdata/input.txt", tempFileForResult.Name(), test.offset, test.limit)
+			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.NoError(t, err)
 
 			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
@@ -49,7 +52,7 @@ func TestCopyWhenFileNotExist(t *testing.T) {
 
 	pathForNewFile := filepath.Join(temp, "new_file.txt")
 
-	err = Copy("testdata/input.txt", pathForNewFile, 0, 0)
+	err = Copy(InputFilePath, pathForNewFile, 0, 0)
 	require.NoError(t, err)
 
 	open, err := os.Open(pathForNewFile)
@@ -76,7 +79,7 @@ func TestCopyWhenEOF(t *testing.T) {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
 
-			err = Copy("testdata/input.txt", tempFileForResult.Name(), test.offset, test.limit)
+			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
 
 			getResultFileAnsCompareWithExpected(t, tempFileForResult, test.pathToExpectedFile)
@@ -85,7 +88,7 @@ func TestCopyWhenEOF(t *testing.T) {
 }
 
 func TestCopyWhenOffsetGreaterFileSize(t *testing.T) {
-	err := Copy("testdata/input.txt", "", 1_000_000_000_000_000, 0)
+	err := Copy(InputFilePath, "", 1_000_000_000_000_000, 0)
 	require.Truef(t, errors.Is(err, ErrOffsetExceedsFileSize), "actual error %q", err)
 }
 

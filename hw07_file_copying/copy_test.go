@@ -37,10 +37,10 @@ func TestCopy(t *testing.T) {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
 			require.NoError(t, err)
+			defer closeFile(tempFileForResult)
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.NoError(t, err)
-			defer closeFile(tempFileForResult)
 
 			compareResultFileWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})
@@ -82,10 +82,10 @@ func TestCopyWhenEOF(t *testing.T) {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
 			require.NoError(t, err)
+			defer closeFile(tempFileForResult)
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
-			defer closeFile(tempFileForResult)
 
 			compareResultFileWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})

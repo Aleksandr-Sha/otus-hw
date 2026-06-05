@@ -36,6 +36,7 @@ func TestCopy(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
+			require.NoError(t, err)
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.NoError(t, err)
@@ -78,6 +79,7 @@ func TestCopyWhenEOF(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.pathToExpectedFile, func(t *testing.T) {
 			tempFileForResult, err := os.CreateTemp(temp, TmpFileNamePattern)
+			require.NoError(t, err)
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
 			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
@@ -122,13 +124,6 @@ func removeTempDir(name string) {
 	}
 }
 
-func removeTempFile(name string) {
-	err := os.Remove(name)
-	if err != nil {
-		log.Printf("Error removing temp file with result: %v", err)
-	}
-}
-
 func closeFile(expectedFile *os.File) {
 	err := expectedFile.Close()
 	if err != nil {
@@ -150,13 +145,4 @@ func getBytesFromFile(t *testing.T, file *os.File) []byte {
 	require.Equal(t, info.Size(), int64(n), "Incorrect number of bytes read")
 
 	return resultBuffer
-}
-
-func getResultFilePath(temp string) (string, error) {
-	glob, err := filepath.Glob(temp + "/*")
-	if err != nil {
-		return "", err
-	}
-
-	return glob[0], nil
 }

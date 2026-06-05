@@ -11,7 +11,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 )
 
-const TmpFileNamePattern = "tmp_for_copy"
+const TmpFileNamePattern = "tmp_for_copy*.txt"
 
 var ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 
@@ -77,7 +77,7 @@ func preparingTempFileForCopyTo(toPath string) (*os.File, error) {
 		return nil, fmt.Errorf("get file path: %w", err)
 	}
 
-	file, err := os.CreateTemp(absPath, TmpFileNamePattern)
+	file, err := os.Create(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("create file: %w", err)
 	}

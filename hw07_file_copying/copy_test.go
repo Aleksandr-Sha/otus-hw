@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -85,7 +84,7 @@ func TestCopyWhenEOF(t *testing.T) {
 			defer closeFile(tempFileForResult)
 
 			err = Copy(InputFilePath, tempFileForResult.Name(), test.offset, test.limit)
-			require.Truef(t, errors.Is(err, io.EOF), "actual error %q", err)
+			require.NoError(t, err)
 
 			compareResultFileWithExpected(t, tempFileForResult, test.pathToExpectedFile)
 		})

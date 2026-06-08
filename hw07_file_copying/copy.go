@@ -97,8 +97,13 @@ func copyData(reader io.Reader, writer io.Writer, limit int64) error {
 			return fmt.Errorf("full copy : %w", err)
 		}
 	} else {
-		_, err := io.CopyN(writer, reader, limit)
+		n, err := io.CopyN(writer, reader, limit)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				log.Printf("EOF reached, number of bytes copied = %d", n)
+				return nil
+			}
+
 			return fmt.Errorf("limit copy : %w", err)
 		}
 	}
